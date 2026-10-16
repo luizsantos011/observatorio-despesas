@@ -3,10 +3,16 @@ package com.example.observatorio_despesas.service;
 import com.example.observatorio_despesas.dto.DespesaRequestDTO;
 import com.example.observatorio_despesas.dto.DespesaResponseDTO;
 import com.example.observatorio_despesas.exception.business.DespesaDuplicadaException;
+import com.example.observatorio_despesas.exception.resource.RecursoNaoEncontradoException;
 import com.example.observatorio_despesas.model.Despesa;
 import com.example.observatorio_despesas.repository.DespesaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class DespesaService {
@@ -31,6 +37,40 @@ public class DespesaService {
         return mapToDTO(salva);
     }
 
+    public DespesaResponseDTO buscarDespesaPorId(UUID id) {
+        Despesa despesa = despesaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Despesa não encontrada"));
+        return mapToDTO(despesa);
+    }
+
+    public Page<DespesaResponseDTO> listarDespesas(Pageable pageable) {
+        return despesaRepository.findAll(pageable).map(this::mapToDTO);
+    }
+
+    @Transactional
+    public DespesaResponseDTO atualizarDespesa(UUID id, DespesaRequestDTO dto) {
+        if (despesaRepository.existsByCodigoOrgaoAndDataReferenciaAndDescricaoAndValorAndIdNot(
+                dto.codigoOrgao(),
+                dto.dataReferencia(),
+                dto.descricao(),
+                dto.valor(),
+                id
+        )) {
+            throw new DespesaDuplicadaException("Despesa já existe para os critérios informados.");
+        }
+        Despesa despesaExistente = despesaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Despesa não encontrada"));
+        Despesa atualizada = setDespesaFields(despesaExistente, dto);
+        despesaRepository.save(atualizada);
+        return mapToDTO(atualizada);
+    }
+
+    public void deletarDespesa(UUID id) {
+        Despesa despesaExistente = despesaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Despesa não encontrada"));
+        despesaRepository.delete(despesaExistente);
+    }
+
     private DespesaResponseDTO mapToDTO(Despesa despesa) {
         return new DespesaResponseDTO(
                 despesa.getId(),
@@ -53,6 +93,16 @@ public class DespesaService {
                 dto.descricao(),
                 dto.valor(),
                 dto.dataReferencia());
+        return despesa;
+    }
+
+    private Despesa setDespesaFields(Despesa despesa, DespesaRequestDTO dto) {
+        despesa.setCodigoOrgao(dto.codigoOrgao());
+        despesa.setNomeOrgao(dto.nomeOrgao());
+        despesa.setCategoria(dto.categoria());
+        despesa.setDescricao(dto.descricao());
+        despesa.setValor(dto.valor());
+        despesa.setDataReferencia(dto.dataReferencia());
         return despesa;
     }
 }

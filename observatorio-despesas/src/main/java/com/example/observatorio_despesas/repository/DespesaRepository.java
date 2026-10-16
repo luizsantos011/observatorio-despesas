@@ -13,4 +13,11 @@ public interface DespesaRepository extends JpaRepository<Despesa, UUID> {
             LocalDate dataReferencia,
             String descricao,
             BigDecimal valor);
+
+    boolean existsByCodigoOrgaoAndDataReferenciaAndDescricaoAndValorAndIdNot(
+            String codigoOrgao,
+            LocalDate dataReferencia,
+            String descricao,
+            BigDecimal valor,
+            UUID id);
 }
