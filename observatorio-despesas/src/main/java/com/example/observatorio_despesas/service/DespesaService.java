@@ -6,9 +6,12 @@ import com.example.observatorio_despesas.exception.business.DespesaDuplicadaExce
 import com.example.observatorio_despesas.exception.resource.RecursoNaoEncontradoException;
 import com.example.observatorio_despesas.model.Despesa;
 import com.example.observatorio_despesas.repository.DespesaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -38,6 +41,10 @@ public class DespesaService {
         Despesa despesa = despesaRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Despesa não encontrada"));
         return mapToDTO(despesa);
+    }
+
+    public Page<DespesaResponseDTO> listarDespesas(Pageable pageable) {
+        return despesaRepository.findAll(pageable).map(this::mapToDTO);
     }
 
     private DespesaResponseDTO mapToDTO(Despesa despesa) {
