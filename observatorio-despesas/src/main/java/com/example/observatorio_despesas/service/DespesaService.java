@@ -2,6 +2,7 @@ package com.example.observatorio_despesas.service;
 
 import com.example.observatorio_despesas.dto.DespesaRequestDTO;
 import com.example.observatorio_despesas.dto.DespesaResponseDTO;
+import com.example.observatorio_despesas.exception.business.DespesaDuplicadaException;
 import com.example.observatorio_despesas.model.Despesa;
 import com.example.observatorio_despesas.repository.DespesaRepository;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class DespesaService {
                 dto.descricao(),
                 dto.valor()
         )) {
-            throw new IllegalArgumentException("Despesa já existe para os critérios informados.");
+            throw new DespesaDuplicadaException("Despesa já existe para os critérios informados.");
         }
         Despesa despesa = mapToEntity(dto);
         Despesa salva = despesaRepository.save(despesa);
