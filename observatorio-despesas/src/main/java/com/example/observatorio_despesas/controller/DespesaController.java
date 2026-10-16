@@ -48,4 +48,16 @@ public class DespesaController {
         Page<DespesaResponseDTO> despesas = despesaService.listarDespesas(pageable);
         return ResponseEntity.ok(despesas);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DespesaResponseDTO> atualizarDespesa(@PathVariable UUID id, @Valid @RequestBody DespesaRequestDTO dto) {
+        DespesaResponseDTO despesaAtualizada = despesaService.atualizarDespesa(id, dto);
+        return ResponseEntity.ok(despesaAtualizada);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarDespesa(@PathVariable UUID id) {
+        despesaService.deletarDespesa(id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -47,6 +47,30 @@ public class DespesaService {
         return despesaRepository.findAll(pageable).map(this::mapToDTO);
     }
 
+    @Transactional
+    public DespesaResponseDTO atualizarDespesa(UUID id, DespesaRequestDTO dto) {
+        if (despesaRepository.existsByCodigoOrgaoAndDataReferenciaAndDescricaoAndValorAndIdNot(
+                dto.codigoOrgao(),
+                dto.dataReferencia(),
+                dto.descricao(),
+                dto.valor(),
+                id
+        )) {
+            throw new DespesaDuplicadaException("Despesa já existe para os critérios informados.");
+        }
+        Despesa despesaExistente = despesaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Despesa não encontrada"));
+        Despesa atualizada = setDespesaFields(despesaExistente, dto);
+        despesaRepository.save(atualizada);
+        return mapToDTO(atualizada);
+    }
+
+    public void deletarDespesa(UUID id) {
+        Despesa despesaExistente = despesaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Despesa não encontrada"));
+        despesaRepository.delete(despesaExistente);
+    }
+
     private DespesaResponseDTO mapToDTO(Despesa despesa) {
         return new DespesaResponseDTO(
                 despesa.getId(),
@@ -69,6 +93,16 @@ public class DespesaService {
                 dto.descricao(),
                 dto.valor(),
                 dto.dataReferencia());
+        return despesa;
+    }
+
+    private Despesa setDespesaFields(Despesa despesa, DespesaRequestDTO dto) {
+        despesa.setCodigoOrgao(dto.codigoOrgao());
+        despesa.setNomeOrgao(dto.nomeOrgao());
+        despesa.setCategoria(dto.categoria());
+        despesa.setDescricao(dto.descricao());
+        despesa.setValor(dto.valor());
+        despesa.setDataReferencia(dto.dataReferencia());
         return despesa;
     }
 }

@@ -109,4 +109,9 @@ public class Despesa {
     public OffsetDateTime getAtualizadoEm() {
         return atualizadoEm;
     }
+
+    @Override
+    public String toString() {
+        return codigoOrgao+dataReferencia+descricao+valor;
+    }
 }
