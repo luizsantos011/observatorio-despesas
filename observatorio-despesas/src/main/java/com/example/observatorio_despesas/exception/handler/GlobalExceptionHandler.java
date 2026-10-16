@@ -2,6 +2,7 @@ package com.example.observatorio_despesas.exception.handler;
 
 import com.example.observatorio_despesas.exception.business.DespesaDuplicadaException;
 import com.example.observatorio_despesas.exception.dto.ErroValidacao;
+import com.example.observatorio_despesas.exception.resource.RecursoNaoEncontradoException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,16 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Erro de validação");
         problemDetail.setProperty("erros", erros);
+        return problemDetail;
+    }
+
+    @ExceptionHandler(RecursoNaoEncontradoException.class)
+    public ProblemDetail handleRecursoNaoEncontradoException(RecursoNaoEncontradoException e) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatusCode.valueOf(404),
+                e.getMessage()
+        );
+        problemDetail.setTitle("Recurso não encontrado");
         return problemDetail;
     }
 }

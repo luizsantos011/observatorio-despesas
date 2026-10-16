@@ -7,13 +7,11 @@ import com.example.observatorio_despesas.service.DespesaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/despesas")
@@ -34,5 +32,11 @@ public class DespesaController {
                 .buildAndExpand(novaDespesa.id())
                 .toUri();
         return ResponseEntity.created(location).body(novaDespesa);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<DespesaResponseDTO> buscarDespesaPorId(@PathVariable UUID id) {
+        DespesaResponseDTO despesa = despesaService.buscarDespesaPorId(id);
+        return ResponseEntity.ok(despesa);
     }
 }
