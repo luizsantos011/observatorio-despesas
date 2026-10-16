@@ -24,7 +24,7 @@ public class Despesa {
     private OffsetDateTime criadoEm;
     private OffsetDateTime atualizadoEm;
 
-    public Despesa() {}
+    protected Despesa() {}
 
     public Despesa(String codigoOrgao, String nomeOrgao, Categoria categoria, String descricao,
                    BigDecimal valor, LocalDate dataReferencia) {
