@@ -1,0 +1,110 @@
+package com.example.observatorio_despesas.controller;
+
+import com.example.observatorio_despesas.dto.DespesaRequestDTO;
+import com.example.observatorio_despesas.dto.DespesaResponseDTO;
+import com.example.observatorio_despesas.enums.Categoria;
+import com.example.observatorio_despesas.exception.business.DespesaDuplicadaException;
+import com.example.observatorio_despesas.exception.handler.GlobalExceptionHandler;
+import com.example.observatorio_despesas.service.DespesaService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+public class DespesaControllerTest {
+
+    private MockMvc mockMvc;
+
+    private ObjectMapper objectMapper;
+
+    private DespesaService despesaService;
+
+    @BeforeEach
+    void setUp() {
+        objectMapper = new ObjectMapper();
+        despesaService = mock(DespesaService.class);
+        mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                .standaloneSetup(new DespesaController(despesaService))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
+
+    @Test
+    void deveCriarDespesaComSucesso() throws Exception {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+        DespesaResponseDTO responseDTO = criarResponseValido();
+
+        when(despesaService.criarDespesa(any(DespesaRequestDTO.class))).thenReturn(responseDTO);
+
+        mockMvc.perform(post("/api/v1/despesas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.id").value(responseDTO.id().toString()));
+    }
+
+    @Test
+    void deveRetornar400QuandoPayloadInvalido() throws Exception {
+        DespesaRequestDTO requestDTO = criarRequestInvalido();
+
+        mockMvc.perform(post("/api/v1/despesas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erros").isArray())
+                .andExpect(jsonPath("$.erros[0].campo").exists())
+                .andExpect(jsonPath("$.erros[0].mensagem").exists());
+
+        verify(despesaService, never()).criarDespesa(any());
+    }
+
+    @Test
+    void deveRetornar409QuandoDespesaDuplicada() throws Exception {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+
+        when(despesaService.criarDespesa(any(DespesaRequestDTO.class)))
+                .thenThrow(new DespesaDuplicadaException("Despesa já cadastrada"));
+
+        mockMvc.perform(post("/api/v1/despesas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isConflict());
+    }
+
+    private DespesaRequestDTO criarRequestValido() {
+        return new DespesaRequestDTO(
+                "123456789", "orgaoExemplo", Categoria.OUTROS, "testando", BigDecimal.valueOf(100.0), LocalDate.now()
+        );
+    }
+
+    private DespesaResponseDTO criarResponseValido() {
+        UUID uuid = UUID.randomUUID();
+        return new DespesaResponseDTO(
+                uuid, "123456789", "orgaoExemplo", Categoria.OUTROS, "testando", BigDecimal.valueOf(100.0),
+                LocalDate.now(), OffsetDateTime.now(), OffsetDateTime.now()
+        );
+    }
+
+    private DespesaRequestDTO criarRequestInvalido() {
+        return new DespesaRequestDTO(
+                "",
+                "orgaoExemplo",
+                Categoria.OUTROS,
+                "testando",
+                BigDecimal.valueOf(-10.0),
+                LocalDate.now()
+        );
+    }
+}
