@@ -9,6 +9,11 @@ import com.example.observatorio_despesas.exception.resource.RecursoNaoEncontrado
 import com.example.observatorio_despesas.service.DespesaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -16,12 +21,15 @@ import tools.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
 public class DespesaControllerTest {
 
@@ -35,9 +43,9 @@ public class DespesaControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         despesaService = mock(DespesaService.class);
-        mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
-                .standaloneSetup(new DespesaController(despesaService))
+        mockMvc = standaloneSetup(new DespesaController(despesaService))
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
     }
 
@@ -103,6 +111,22 @@ public class DespesaControllerTest {
 
         mockMvc.perform(get("/api/v1/despesas/{id}", UUID.randomUUID()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveRetornar200QuandoListar() throws Exception{
+        List<DespesaResponseDTO> conteudo = List.of(criarResponseValido(), criarResponseValido());
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<DespesaResponseDTO> page = new PageImpl<>(conteudo, pageable, conteudo.size());
+
+        when(despesaService.listarDespesas(any(Pageable.class))).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/despesas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(conteudo.size()))
+                .andExpect(jsonPath("$.totalElements").value(conteudo.size()))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(10));
     }
 
     private DespesaRequestDTO criarRequestValido() {
