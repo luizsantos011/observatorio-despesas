@@ -5,6 +5,7 @@ import com.example.observatorio_despesas.dto.DespesaResponseDTO;
 import com.example.observatorio_despesas.enums.Categoria;
 import com.example.observatorio_despesas.exception.business.DespesaDuplicadaException;
 import com.example.observatorio_despesas.exception.handler.GlobalExceptionHandler;
+import com.example.observatorio_despesas.exception.resource.RecursoNaoEncontradoException;
 import com.example.observatorio_despesas.service.DespesaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,6 +82,27 @@ public class DespesaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO)))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void deveRetornar200QuandoBuscarPorId() throws Exception {
+        DespesaResponseDTO responseDTO = criarResponseValido();
+
+        when(despesaService.buscarDespesaPorId(any(UUID.class))).thenReturn(responseDTO);
+
+        mockMvc.perform(get("/api/v1/despesas/{id}", responseDTO.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(responseDTO.id().toString()))
+                .andExpect(jsonPath("$.codigoOrgao").value(responseDTO.codigoOrgao()));
+
+    }
+
+    @Test
+    void deveRetornar404QuandoBuscaIdNaoEncontrado() throws Exception {
+        when(despesaService.buscarDespesaPorId(any(UUID.class))).thenThrow(new RecursoNaoEncontradoException("Recurso não encontado"));
+
+        mockMvc.perform(get("/api/v1/despesas/{id}", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
     }
 
     private DespesaRequestDTO criarRequestValido() {
