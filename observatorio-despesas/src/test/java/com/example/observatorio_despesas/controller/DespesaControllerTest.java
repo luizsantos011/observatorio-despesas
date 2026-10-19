@@ -26,8 +26,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
@@ -127,6 +126,69 @@ public class DespesaControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(conteudo.size()))
                 .andExpect(jsonPath("$.number").value(0))
                 .andExpect(jsonPath("$.size").value(10));
+    }
+
+    @Test
+    void deveRetornar200QuandoAtualizarValido() throws Exception {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+        DespesaResponseDTO responseDTO = criarResponseValido();
+
+        when(despesaService.atualizarDespesa(any(UUID.class), any(DespesaRequestDTO.class))).thenReturn(responseDTO);
+
+        mockMvc.perform(put("/api/v1/despesas/{id}", UUID.randomUUID())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deveRetornar400QuandoPayloadAtualizarInvalido() throws Exception {
+        DespesaRequestDTO requestDTO = criarRequestInvalido();
+
+        mockMvc.perform(put("/api/v1/despesas/{id}", UUID.randomUUID())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isBadRequest());
+
+        verify(despesaService, never()).atualizarDespesa(any(UUID.class), any(DespesaRequestDTO.class));
+    }
+
+    @Test
+    void deveRetornar404QuandoAtualizarNaoEncontrado() throws Exception {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+
+        when(despesaService.atualizarDespesa(any(UUID.class), any(DespesaRequestDTO.class))).thenThrow(new RecursoNaoEncontradoException("Recurso não encontrado"));
+
+        mockMvc.perform(put("/api/v1/despesas/{id}", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveRetornar409QuandoAtualizarConflita() throws Exception {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+
+        when(despesaService.atualizarDespesa(any(UUID.class), any(DespesaRequestDTO.class))).thenThrow(new DespesaDuplicadaException("Os parâmetros informados geram duplicata"));
+
+        mockMvc.perform(put("/api/v1/despesas/{id}", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void deveRetornar204QuandoDeletarSucesso() throws Exception {
+        mockMvc.perform(delete("/api/v1/despesas/{id}", UUID.randomUUID()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deveRetornar404QuandoDeletarNaoEncontrado() throws Exception {
+        doThrow(new RecursoNaoEncontradoException("Recurso não encontrado")).when(despesaService).deletarDespesa(any(UUID.class));
+
+        mockMvc.perform(delete("/api/v1/despesas/{id}", UUID.randomUUID()))
+                .andExpect(status().isNotFound());
     }
 
     private DespesaRequestDTO criarRequestValido() {
