@@ -106,6 +106,66 @@ public class DespesaServiceTest {
         assertThat(resultado.getContent()).hasSize(despesas.size());
     }
 
+    @Test
+    void deveAtualizarComSucesso() {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+        UUID id = UUID.randomUUID();
+        Despesa despesa = criarDespesa();
+
+        when(despesaRepository.existsByCodigoOrgaoAndDataReferenciaAndDescricaoAndValorAndIdNot(
+                requestDTO.codigoOrgao(),
+                requestDTO.dataReferencia(),
+                requestDTO.descricao(),
+                requestDTO.valor(),
+                id)).thenReturn(false);
+
+        when(despesaRepository.findById(id)).thenReturn(Optional.of(despesa));
+
+        when(despesaRepository.save(any(Despesa.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        DespesaResponseDTO resultado = despesaService.atualizarDespesa(id, requestDTO);
+
+        assertThat(resultado.descricao()).isEqualTo(requestDTO.descricao());
+        assertThat(resultado.valor()).isEqualTo(requestDTO.valor());
+        assertThat(resultado.codigoOrgao()).isEqualTo(requestDTO.codigoOrgao());
+    }
+
+    @Test
+    void deveFalharAtualizacaoPorDuplicata() {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+        UUID id = UUID.randomUUID();
+
+        when(despesaRepository.existsByCodigoOrgaoAndDataReferenciaAndDescricaoAndValorAndIdNot(
+                requestDTO.codigoOrgao(),
+                requestDTO.dataReferencia(),
+                requestDTO.descricao(),
+                requestDTO.valor(),
+                id)).thenReturn(true);
+
+        assertThatThrownBy(() -> despesaService.atualizarDespesa(id, requestDTO))
+                .isInstanceOf(DespesaDuplicadaException.class);
+    }
+
+    @Test
+    void deveFalharAtualizacaoPorNaoEncontrado() {
+        DespesaRequestDTO requestDTO = criarRequestValido();
+        UUID id = UUID.randomUUID();
+
+        when(despesaRepository.existsByCodigoOrgaoAndDataReferenciaAndDescricaoAndValorAndIdNot(
+                requestDTO.codigoOrgao(),
+                requestDTO.dataReferencia(),
+                requestDTO.descricao(),
+                requestDTO.valor(),
+                id)).thenReturn(false);
+
+        when(despesaRepository.findById(id)).thenReturn(Optional.empty());
+
+
+        assertThatThrownBy(() -> despesaService.atualizarDespesa(id, requestDTO))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
     private DespesaRequestDTO criarRequestValido() {
         return new DespesaRequestDTO(
                 "123456789",
