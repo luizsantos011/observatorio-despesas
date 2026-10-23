@@ -166,6 +166,27 @@ public class DespesaServiceTest {
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
+    @Test
+    void deveDeletarComSucesso() {
+        UUID id = UUID.randomUUID();
+        Despesa despesa = criarDespesa();
+        when(despesaRepository.findById(id)).thenReturn(Optional.of(despesa));
+
+        despesaService.deletarDespesa(id);
+
+        verify(despesaRepository).delete(despesa);
+    }
+
+    @Test
+    void deveFalharDeletarPorNaoEncontrado() {
+        UUID id = UUID.randomUUID();
+
+        when(despesaRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> despesaService.deletarDespesa(id))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
     private DespesaRequestDTO criarRequestValido() {
         return new DespesaRequestDTO(
                 "123456789",
