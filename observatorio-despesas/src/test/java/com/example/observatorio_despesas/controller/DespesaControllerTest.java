@@ -181,6 +181,8 @@ public class DespesaControllerTest {
     void deveRetornar204QuandoDeletarSucesso() throws Exception {
         mockMvc.perform(delete("/api/v1/despesas/{id}", UUID.randomUUID()))
                 .andExpect(status().isNoContent());
+
+        System.out.println();
     }
 
     @Test
